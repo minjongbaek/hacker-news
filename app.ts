@@ -29,7 +29,6 @@ interface Store {
 
 
 const container: HTMLElement | null = document.getElementById('root');
-const http: XMLHttpRequest = new XMLHttpRequest();
 const content = document.createElement('div');
 const NEWS_URL = 'https://api.hnpwa.com/v0/news/1.json';
 const CONTENT_URL = 'https://api.hnpwa.com/v0/item/@id.json';
@@ -38,11 +37,33 @@ const store: Store = {
     feeds: [],
 };
 
-function getData<HttpResponse>(url: string): HttpResponse {
-    http.open('GET', url, false);
-    http.send();
+class Api {
+    url: string;
+    http: XMLHttpRequest;
 
-    return JSON.parse(http.response);
+    constructor(url: string) {
+        this.url = url;
+        this.http = new XMLHttpRequest();
+    }
+
+    protected getRequest<HttpResponse>(): HttpResponse {
+        this.http.open('GET', this.url, false);
+        this.http.send();
+
+        return JSON.parse(this.http.response);
+    }
+}
+
+class NewsFeedApi extends Api {
+    getData(): NewsFeed[] {
+        return this.getRequest<NewsFeed[]>();
+    }
+}
+
+class NewsDetailApi extends Api {
+    getData(): NewsDetail {
+        return this.getRequest<NewsDetail>();
+    }
 }
 
 function makeFeeds(feeds: NewsFeed[]): NewsFeed[] {
@@ -62,6 +83,7 @@ function updateView(html: string): void {
 }
 
 function newsFeed(): void {
+    const api = new NewsFeedApi(NEWS_URL);
     let newsFeed: NewsFeed[] = store.feeds;
     const newsList = [];
 
@@ -91,7 +113,7 @@ function newsFeed(): void {
     `;
 
     if (newsFeed.length === 0) {
-        newsFeed = store.feeds = makeFeeds(getData<NewsFeed[]>(NEWS_URL));
+        newsFeed = store.feeds = makeFeeds(api.getData());
     }
 
     for (let i = (store.currentPage - 1) * 10; i < (store.currentPage * 10); i += 1) {
@@ -125,7 +147,8 @@ function newsFeed(): void {
 }
 
 function newsDetail(id: string): void {
-    const newsContent = getData<NewsDetail>(CONTENT_URL.replace('@id', id));
+    const api = new NewsDetailApi(CONTENT_URL.replace('@id', id));
+    const newsContent = api.getData();
 
     let template = `
         <div class="bg-gray-600 min-h-screen pb-8">
