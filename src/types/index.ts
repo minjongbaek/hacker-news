@@ -29,7 +29,14 @@ export interface RouteInfo {
     page: View;
 }
 
-export interface Store {
+export interface NewsStore {
+    getAllFeeds: () => NewsFeed[];
+    getFeed: (position: number) => NewsFeed;
+    setFeeds: (feeds: NewsFeed[]) => void;
+    makeRead: (id: number) => void;
+    hasFeeds: boolean;
+    numberOfFeed: number;
     currentPage: number;
-    feeds: NewsFeed[];
+    nextPage: number;
+    prevPage: number;
 }

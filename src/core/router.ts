@@ -21,12 +21,9 @@ export default class Router {
 
     route() {
         const routePath = location.hash;
-        console.log(routePath);
-        console.log(this.defaultRoute);
         if (routePath === '' && this.defaultRoute) {
             this.defaultRoute.page.render();
         }
-        console.log(this.routeTable);
         for (const routeInfo of this.routeTable) {
             if (routePath.includes(routeInfo.path)) {
                 routeInfo.page.render();
