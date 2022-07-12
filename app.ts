@@ -1,21 +1,51 @@
-const container = document.getElementById('root');
-const http = new XMLHttpRequest();
+type News = {
+    id: number;
+    title: string;
+    url: string;
+    user: string;
+    time_ago: string;
+    content: string;
+}
+
+type NewsFeed = News & {
+    comments_count: number;
+    points: number;
+    read?: boolean;
+}
+
+type NewsDetail = News & {
+    comments: [];
+}
+
+type NewsComment = News & {
+    comments: [];
+    level: number;
+}
+
+type Store = {
+    currentPage: number;
+    feeds: NewsFeed[];
+}
+
+
+const container: HTMLElement | null = document.getElementById('root');
+const http: XMLHttpRequest = new XMLHttpRequest();
 const content = document.createElement('div');
 const NEWS_URL = 'https://api.hnpwa.com/v0/news/1.json';
 const CONTENT_URL = 'https://api.hnpwa.com/v0/item/@id.json';
-const store = {
+const store: Store = {
     currentPage: 1,
     feeds: [],
 };
 
-function getData(url) {
+function getData<HttpResponse>(url: string): HttpResponse {
     http.open('GET', url, false);
     http.send();
 
     return JSON.parse(http.response);
 }
 
-function makeFeeds(feeds) {
+function makeFeeds(feeds: NewsFeed[]): NewsFeed[] {
     for (let i = 0; i < feeds.length; i++) {
         feeds[i].read = false;
     }
@@ -23,8 +53,16 @@ function makeFeeds(feeds) {
     return feeds;
 }
 
-function newsFeed() {
-    let newsFeed = store.feeds;
+function updateView(html: string): void {
+    if (container != null) {
+        container.innerHTML = html;
+    } else {
+        console.error('최상위 컨테이너가 없어 UI를 만들 수 없습니다.');
+    }
+}
+
+function newsFeed(): void {
+    let newsFeed: NewsFeed[] = store.feeds;
     const newsList = [];
 
     let template = `
@@ -53,7 +91,7 @@ function newsFeed() {
     `;
 
     if (newsFeed.length === 0) {
-        newsFeed = store.feeds = makeFeeds(getData(NEWS_URL));
+        newsFeed = store.feeds = makeFeeds(getData<NewsFeed[]>(NEWS_URL));
     }
 
     for (let i = (store.currentPage - 1) * 10; i < (store.currentPage * 10); i += 1) {
@@ -80,14 +118,14 @@ function newsFeed() {
     }
 
     template = template.replace('{{__news_feed__}}', newsList.join(''));
-    template = template.replace('{{__prev_page__}}', store.currentPage > 1 ? store.currentPage - 1 : 1);
-    template = template.replace('{{__next_page__}}', store.currentPage < Math.ceil(newsFeed.length / 10) ? store.currentPage + 1 : store.currentPage);
+    template = template.replace('{{__prev_page__}}', String(store.currentPage > 1 ? store.currentPage - 1 : 1));
+    template = template.replace('{{__next_page__}}', String(store.currentPage < Math.ceil(newsFeed.length / 10) ? store.currentPage + 1 : store.currentPage));
 
-    container.innerHTML = template;
+    updateView(template);
 }
 
-function newsDetail(id) {
-    const newsContent = getData(CONTENT_URL.replace('@id', id));
+function newsDetail(id: string): void {
+    const newsContent = getData<NewsDetail>(CONTENT_URL.replace('@id', id));
 
     let template = `
         <div class="bg-gray-600 min-h-screen pb-8">
@@ -124,32 +162,33 @@ function newsDetail(id) {
             break;
         }
     }
-
-    function makeComment(comments, called = 0) {
-        const commentString = [];
-
-        for (let i = 0; i < comments.length; i += 1) {
-            commentString.push(`
-                <div style="padding-left: ${called * 40}px;" class="mt-4">
-                    <div class="text-gray-400">
-                        <i class="fa fa-sort-up mr-2"></i>
-                        <strong>${comments[i].user}</strong> ${comments[i].time_ago}
-                    </div>
-                    <p class="text-gray-700">${comments[i].content}</p>
-                </div>      
-            `);
-
-            if (comments[i].comments.length > 0) {
-                commentString.push(makeComment(comments[i].comments, called + 1));
-            }
-        }
-        return commentString.join('');
-    }
-
-    container.innerHTML = template.replace('{{__comments__}}', makeComment(newsContent.comments));
+    
+    updateView(template.replace('{{__comments__}}', makeComment(newsContent.comments)));
 }
 
-function router() {
+function makeComment(comments: NewsComment[]): string {
+    const commentString = [];
+
+    for (let i = 0; i < comments.length; i += 1) {
+        const comment: NewsComment = comments[i];
+        commentString.push(`
+            <div style="padding-left: ${comment.level * 40}px;" class="mt-4">
+                <div class="text-gray-400">
+                    <i class="fa fa-sort-up mr-2"></i>
+                    <strong>${comment.user}</strong> ${comment.time_ago}
+                </div>
+                <p class="text-gray-700">${comment.content}</p>
+            </div>      
+        `);
+
+        if (comment.comments.length > 0) {
+            commentString.push(makeComment(comment.comments));
+        }
+    }
+    return commentString.join('');
+}
+
+function router(): void {
     const routePath = location.hash;
 
     if (routePath === '') {
@@ -159,8 +198,12 @@ function router() {
         console.log(store.currentPage);
         newsFeed();
     } else {
-        const id = location.hash.split('/').pop();
-        newsDetail(id);
+        const id: string | undefined = routePath.split('/').pop();
+        if (id) {
+            newsDetail(id);
+        } else {
+            console.error('ID가 유효하지 않아 UI를 만들 수 없습니다.')
+        }
     }
 }
 
