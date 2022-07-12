@@ -1,28 +1,28 @@
-type News = {
-    id: number;
-    title: string;
-    url: string;
-    user: string;
-    time_ago: string;
-    content: string;
+interface News {
+    readonly id: number;
+    readonly title: string;
+    readonly url: string;
+    readonly user: string;
+    readonly time_ago: string;
+    readonly content: string;
 }
 
-type NewsFeed = News & {
-    comments_count: number;
-    points: number;
+interface NewsFeed extends News {
+    readonly comments_count: number;
+    readonly points: number;
     read?: boolean;
 }
 
-type NewsDetail = News & {
-    comments: [];
+interface NewsDetail extends News {
+    readonly comments: [];
 }
 
-type NewsComment = News & {
-    comments: [];
-    level: number;
+interface NewsComment extends News {
+    readonly comments: [];
+    readonly level: number;
 }
 
-type Store = {
+interface Store {
     currentPage: number;
     feeds: NewsFeed[];
 }
@@ -162,7 +162,7 @@ function newsDetail(id: string): void {
             break;
         }
     }
-    
+
     updateView(template.replace('{{__comments__}}', makeComment(newsContent.comments)));
 }
 
