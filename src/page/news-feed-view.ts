@@ -1,6 +1,7 @@
 import View from "../core/view";
 import { NewsFeedApi } from "../core/api";
 import { NewsFeed, NewsStore } from '../types';
+import { NEWS_URL } from "../config";
 
 const template = `
     <div class="bg-gray-600 min-h-screen">
@@ -32,17 +33,23 @@ export default class NewsFeedView extends View {
 
     constructor(containerId: string, store: NewsStore) {
         super(containerId, template);
-
         this.store = store;
-        this.api = new NewsFeedApi();
-        if (!this.store.hasFeeds) {
-            this.store.setFeeds(this.api.getData())
-        }
+        this.api = new NewsFeedApi(NEWS_URL);
     }
 
-    render(): void {
-        const routePath = location.hash;
-        this.store.currentPage = this.store.currentPage = Number(routePath.slice(routePath.indexOf('#/page/') + '#/page/'.length));
+    render(page: string = '1'): void {
+        this.store.currentPage = Number(page);
+        
+        if (!this.store.hasFeeds) {
+            this.api.getData((feeds: NewsFeed[]) => {
+                this.store.setFeeds(feeds);
+                this.renderView();
+            });
+        }
+        this.renderView();
+    }
+
+    renderView(): void {
         for (let i = (this.store.currentPage - 1) * 10; i < (this.store.currentPage * 10); i += 1) {
             if (this.store.getFeed(i) === undefined) break;
             const { id, title, comments_count, user, points, time_ago, read } = this.store.getFeed(i);

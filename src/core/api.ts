@@ -1,42 +1,42 @@
 import { NewsFeed, NewsDetail } from '../types';
-import { NEWS_URL, CONTENT_URL } from '../config';
 
-function applyApiMixins(targetClass: any, baseClasses: any[]): void {
-    baseClasses.forEach(baseClass => {
-        Object.getOwnPropertyNames(baseClass.prototype).forEach(name => {
-            const descriptor = Object.getOwnPropertyDescriptor(baseClass.prototype, name);
+export default class Api {
+    http: XMLHttpRequest;
+    url: string;
 
-            if (descriptor) {
-                Object.defineProperty(targetClass.prototype, name, descriptor);
-            }
-        })
-    });
-}
+    constructor(url: string) {
+        this.http = new XMLHttpRequest();
+        this.url = url;
+    }
 
-class Api {
-    getRequest<HttpResponse>(url: string): HttpResponse {
-        const http = new XMLHttpRequest;
-        http.open('GET', url, false);
-        http.send();
+    getRequest<HttpResponse>(callBack: (data: HttpResponse) => void): void {
+        this.http.open('GET', this.url);
 
-        return JSON.parse(http.response);
+        this.http.addEventListener(('load'), () => {
+            callBack(JSON.parse(this.http.response) as HttpResponse);
+        });
+
+        this.http.send();
     }
 }
 
-export class NewsFeedApi {
-    getData(): NewsFeed[] {
-        return this.getRequest<NewsFeed[]>(NEWS_URL);
+export class NewsFeedApi extends Api {
+    constructor(url: string) {
+        super(url);
+    }
+
+    getData(callBack: (data: NewsFeed[]) => void): void {
+        return this.getRequest<NewsFeed[]>(callBack);
     }
 }
 
-export class NewsDetailApi {
-    getData(id: string): NewsDetail {
-        return this.getRequest<NewsDetail>(CONTENT_URL.replace('@id', id));
+export class NewsDetailApi extends Api {
+    constructor(url: string) {
+        super(url);
+    }
+    
+    getData(callBack: (data: NewsDetail) => void): void {
+        return this.getRequest<NewsDetail>(callBack);
     }
 }
 
-export interface NewsFeedApi extends Api { };
-export interface NewsDetailApi extends Api { };
-
-applyApiMixins(NewsFeedApi, [Api]);
-applyApiMixins(NewsDetailApi, [Api]);
