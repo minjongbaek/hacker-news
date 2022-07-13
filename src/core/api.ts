@@ -9,14 +9,9 @@ export default class Api {
         this.url = url;
     }
 
-    getRequest<HttpResponse>(callBack: (data: HttpResponse) => void): void {
-        this.http.open('GET', this.url);
-
-        this.http.addEventListener(('load'), () => {
-            callBack(JSON.parse(this.http.response) as HttpResponse);
-        });
-
-        this.http.send();
+    async request<HttpResponse>(): Promise<HttpResponse> {
+        const response = await fetch(this.url)
+        return await response.json() as HttpResponse;
     }
 }
 
@@ -25,8 +20,8 @@ export class NewsFeedApi extends Api {
         super(url);
     }
 
-    getData(callBack: (data: NewsFeed[]) => void): void {
-        return this.getRequest<NewsFeed[]>(callBack);
+    async getData(): Promise<NewsFeed[]> {
+        return this.request<NewsFeed[]>();
     }
 }
 
@@ -35,8 +30,8 @@ export class NewsDetailApi extends Api {
         super(url);
     }
     
-    getData(callBack: (data: NewsDetail) => void): void {
-        return this.getRequest<NewsDetail>(callBack);
+    async getData(): Promise<NewsDetail> {
+        return this.request<NewsDetail>();
     }
 }
 
